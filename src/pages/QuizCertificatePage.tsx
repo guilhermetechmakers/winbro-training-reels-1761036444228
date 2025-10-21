@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { XCircle, ArrowLeft } from 'lucide-react';
 import { useQuizCertificateData, useDownloadCertificate, useShareCertificate } from '@/hooks/useQuizCertificate';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'motion/react';
 import ScoreSummaryComponent from '@/components/quiz-certificate-page/ScoreSummary';
 import FeedbackPerQuestion from '@/components/quiz-certificate-page/FeedbackPerQuestion';
 import CertificateCard from '@/components/quiz-certificate-page/CertificateCard';
@@ -71,11 +72,28 @@ export default function QuizCertificatePage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-8 bg-muted rounded w-1/3 shimmer"></div>
-        <div className="h-32 bg-muted rounded shimmer"></div>
-        <div className="h-64 bg-muted rounded shimmer"></div>
-      </div>
+      <motion.div 
+        className="space-y-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <motion.div 
+          className="h-8 bg-muted rounded w-1/3 shimmer"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        />
+        <motion.div 
+          className="h-32 bg-muted rounded shimmer"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
+        />
+        <motion.div 
+          className="h-64 bg-muted rounded shimmer"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
+        />
+      </motion.div>
     );
   }
 

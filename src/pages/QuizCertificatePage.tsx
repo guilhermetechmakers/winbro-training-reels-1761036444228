@@ -20,6 +20,7 @@ import {
   Target
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useQuizCertificateData } from '@/hooks/useQuizCertificate';
 import type { 
   QuizCertificatePageData, 
   ScoreSummary, 
@@ -183,16 +184,8 @@ export default function QuizCertificatePage() {
   const navigate = useNavigate();
   const [isRetaking, setIsRetaking] = useState(false);
 
-  // Mock query - replace with actual API call
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['quiz-certificate', id],
-    queryFn: async () => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return mockQuizCertificateData;
-    },
-    enabled: !!id
-  });
+  // Use the enhanced hook with Supabase integration
+  const { data, isLoading, error } = useQuizCertificateData(id || '');
 
   const handleRetake = () => {
     setIsRetaking(true);
@@ -228,9 +221,9 @@ export default function QuizCertificatePage() {
   if (isLoading) {
     return (
       <div className="space-y-6 animate-pulse">
-        <div className="h-8 bg-muted rounded w-1/3"></div>
-        <div className="h-32 bg-muted rounded"></div>
-        <div className="h-64 bg-muted rounded"></div>
+        <div className="h-8 bg-muted rounded w-1/3 shimmer"></div>
+        <div className="h-32 bg-muted rounded shimmer"></div>
+        <div className="h-64 bg-muted rounded shimmer"></div>
       </div>
     );
   }
@@ -294,222 +287,304 @@ export default function QuizCertificatePage() {
   } : null;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Quiz Results</h1>
-          <p className="text-muted-foreground mt-1">{quiz.title}</p>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" onClick={handleBackToCourse}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Course
-          </Button>
-        </div>
-      </div>
-
-      {/* Score Summary */}
-      <Card className="overflow-hidden">
-        <CardContent className="p-8">
-          <div className="text-center space-y-6">
-            {/* Status Icon */}
-            <div className="w-24 h-24 mx-auto rounded-full bg-muted flex items-center justify-center">
-              {scoreSummary.passed ? (
-                <CheckCircle className="h-12 w-12 text-winbro-success" />
-              ) : (
-                <XCircle className="h-12 w-12 text-destructive" />
-              )}
-            </div>
-            
-            {/* Result Message */}
-            <div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                {scoreSummary.passed ? 'Congratulations!' : 'Keep Learning!'}
-              </h2>
-              <p className="text-muted-foreground">
-                You scored {scoreSummary.percentage}% on this quiz
-              </p>
-            </div>
-
-            {/* Score Details */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-winbro-teal">{scoreSummary.percentage}%</div>
-                <div className="text-sm text-muted-foreground">Final Score</div>
-              </div>
-              
-              <div className="text-center">
-                <div className="text-2xl font-bold text-winbro-success">
-                  {feedback.filter(f => f.is_correct).length}
-                </div>
-                <div className="text-sm text-muted-foreground">Correct Answers</div>
-              </div>
-              
-              <div className="text-center">
-                <div className="text-2xl font-bold text-destructive">
-                  {feedback.filter(f => !f.is_correct).length}
-                </div>
-                <div className="text-sm text-muted-foreground">Incorrect Answers</div>
-              </div>
-            </div>
-
-            {/* Additional Info */}
-            <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
-              {quiz_attempt.time_spent_seconds && (
-                <div className="flex items-center">
-                  <Clock className="h-4 w-4 mr-1" />
-                  {Math.floor(quiz_attempt.time_spent_seconds / 60)}m {quiz_attempt.time_spent_seconds % 60}s
-                </div>
-              )}
-              <div className="flex items-center">
-                <Target className="h-4 w-4 mr-1" />
-                Attempt {quiz_attempt.attempt_number} of {quiz.max_attempts || 3}
-              </div>
-              {remaining_attempts > 0 && (
-                <div className="flex items-center">
-                  <RotateCcw className="h-4 w-4 mr-1" />
-                  {remaining_attempts} attempts remaining
-                </div>
-              )}
-            </div>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8 space-y-8 animate-fade-in">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground font-heading">
+              Quiz Results
+            </h1>
+            <p className="text-muted-foreground text-lg">{quiz.title}</p>
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex items-center space-x-4">
+            <Button 
+              variant="outline" 
+              onClick={handleBackToCourse}
+              className="hover:bg-muted/50 transition-all duration-200 hover-scale"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Course
+            </Button>
+          </div>
+        </div>
 
-      {/* Certificate Section */}
-      {certificateInfo && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Award className="h-5 w-5 mr-2 text-winbro-amber" />
-              Certificate of Completion
+        {/* Score Summary */}
+        <Card className="overflow-hidden shadow-elevation-100 border border-border hover:shadow-elevation-200 transition-all duration-300 hover-lift">
+          <CardContent className="p-8">
+            <div className="text-center space-y-8">
+              {/* Status Icon */}
+              <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center shadow-inner animate-bounce-in">
+                {scoreSummary.passed ? (
+                  <CheckCircle className="h-12 w-12 text-winbro-success animate-scale-in" />
+                ) : (
+                  <XCircle className="h-12 w-12 text-destructive animate-scale-in" />
+                )}
+              </div>
+              
+              {/* Result Message */}
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold text-foreground font-heading">
+                  {scoreSummary.passed ? 'Congratulations!' : 'Keep Learning!'}
+                </h2>
+                <p className="text-muted-foreground text-lg">
+                  You scored <span className="font-semibold text-winbro-teal">{scoreSummary.percentage}%</span> on this quiz
+                </p>
+              </div>
+
+              {/* Score Details */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="text-center space-y-2">
+                  <div className="text-5xl font-bold text-winbro-teal animate-fade-in-up">
+                    {scoreSummary.percentage}%
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium">Final Score</div>
+                </div>
+                
+                <div className="text-center space-y-2">
+                  <div className="text-3xl font-bold text-winbro-success animate-fade-in-up">
+                    {feedback.filter(f => f.is_correct).length}
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium">Correct Answers</div>
+                </div>
+                
+                <div className="text-center space-y-2">
+                  <div className="text-3xl font-bold text-destructive animate-fade-in-up">
+                    {feedback.filter(f => !f.is_correct).length}
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium">Incorrect Answers</div>
+                </div>
+              </div>
+
+              {/* Additional Info */}
+              <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
+                {quiz_attempt.time_spent_seconds && (
+                  <div className="flex items-center space-x-1 bg-muted/30 px-3 py-2 rounded-full">
+                    <Clock className="h-4 w-4" />
+                    <span className="font-medium">
+                      {Math.floor(quiz_attempt.time_spent_seconds / 60)}m {quiz_attempt.time_spent_seconds % 60}s
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center space-x-1 bg-muted/30 px-3 py-2 rounded-full">
+                  <Target className="h-4 w-4" />
+                  <span className="font-medium">
+                    Attempt {quiz_attempt.attempt_number} of {quiz.max_attempts || 3}
+                  </span>
+                </div>
+                {remaining_attempts > 0 && (
+                  <div className="flex items-center space-x-1 bg-winbro-amber/10 text-winbro-amber px-3 py-2 rounded-full">
+                    <RotateCcw className="h-4 w-4" />
+                    <span className="font-medium">
+                      {remaining_attempts} attempts remaining
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Certificate Section */}
+        {certificateInfo && (
+          <Card className="shadow-elevation-100 border border-border hover:shadow-elevation-200 transition-all duration-300 hover-lift animate-fade-in-up">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center text-xl font-heading">
+                <Award className="h-6 w-6 mr-3 text-winbro-amber" />
+                Certificate of Completion
+              </CardTitle>
+              <CardDescription className="text-base">
+                Your achievement has been recorded and verified
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-lg text-foreground">
+                      {certificateInfo.certificate.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Certificate #{certificateInfo.certificate.certificate_number}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Issued on {new Date(certificateInfo.certificate.issued_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Badge 
+                    variant="outline" 
+                    className="bg-winbro-success/10 text-winbro-success border-winbro-success/20 px-3 py-1 text-sm font-medium"
+                  >
+                    {certificateInfo.certificate.status.toUpperCase()}
+                  </Badge>
+                </div>
+                
+                <Separator />
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <Button 
+                    onClick={handleDownloadCertificate} 
+                    className="w-full hover:scale-105 transition-all duration-200 hover-glow"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleShareCertificate} 
+                    className="w-full hover:scale-105 transition-all duration-200 hover-scale"
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Share
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleVerifyCertificate} 
+                    className="w-full hover:scale-105 transition-all duration-200 hover-scale"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Verify
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Question Review */}
+        <Card className="shadow-elevation-100 border border-border hover:shadow-elevation-200 transition-all duration-300 hover-lift animate-fade-in-up">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center text-xl font-heading">
+              <BookOpen className="h-6 w-6 mr-3" />
+              Question Review
             </CardTitle>
-            <CardDescription>
-              Your achievement has been recorded and verified
+            <CardDescription className="text-base">
+              Review your answers and explanations
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">{certificateInfo.certificate.title}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Certificate #{certificateInfo.certificate.certificate_number}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Issued on {new Date(certificateInfo.certificate.issued_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <Badge variant="outline" className="bg-winbro-success/10 text-winbro-success border-winbro-success/20">
-                  {certificateInfo.certificate.status.toUpperCase()}
-                </Badge>
-              </div>
-              
-              <Separator />
-              
-              <div className="flex flex-wrap gap-2">
-                <Button onClick={handleDownloadCertificate} className="flex-1 min-w-0">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download PDF
-                </Button>
-                <Button variant="outline" onClick={handleShareCertificate} className="flex-1 min-w-0">
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </Button>
-                <Button variant="outline" onClick={handleVerifyCertificate} className="flex-1 min-w-0">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Verify
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Question Review */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <BookOpen className="h-5 w-5 mr-2" />
-            Question Review
-          </CardTitle>
-          <CardDescription>
-            Review your answers and explanations
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {questionFeedbacks.map((qf, index) => (
-              <div key={qf.question.id} className="space-y-3">
-                <div className="flex items-start space-x-3">
-                  <div className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center text-sm font-medium",
-                    qf.is_correct ? 'bg-winbro-success text-white' : 'bg-destructive text-white'
-                  )}>
-                    {qf.is_correct ? '✓' : '✗'}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium">{qf.question.question_text}</h4>
-                    <div className="mt-2 space-y-1">
-                      {qf.question.options?.map((option, optionIndex) => (
-                        <div
-                          key={optionIndex}
-                          className={cn(
-                            "p-2 rounded text-sm",
-                            optionIndex === qf.correct_answer.value
-                              ? 'bg-winbro-success/10 border border-winbro-success/20'
-                              : optionIndex === qf.user_answer.value && !qf.is_correct
-                                ? 'bg-destructive/10 border border-destructive/20'
-                                : 'bg-muted/50'
-                          )}
-                        >
-                          {option}
-                          {optionIndex === qf.correct_answer.value && (
-                            <span className="ml-2 text-winbro-success font-medium">(Correct)</span>
-                          )}
-                          {optionIndex === qf.user_answer.value && !qf.is_correct && (
-                            <span className="ml-2 text-destructive font-medium">(Your Answer)</span>
-                          )}
-                        </div>
-                      ))}
+            <div className="space-y-8">
+              {questionFeedbacks.map((qf, index) => (
+                <div key={qf.question.id} className="space-y-4 animate-fade-in-up" style={{ animationDelay: `${index * 100}ms` }}>
+                  <div className="flex items-start space-x-4">
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 shadow-sm",
+                      qf.is_correct ? 'bg-winbro-success text-white' : 'bg-destructive text-white'
+                    )}>
+                      {qf.is_correct ? '✓' : '✗'}
                     </div>
-                    {qf.explanation && (
-                      <p className="text-sm text-muted-foreground mt-2">
-                        <strong>Explanation:</strong> {qf.explanation}
-                      </p>
-                    )}
-                    {qf.remediation_clip_id && (
-                      <Button variant="outline" size="sm" className="mt-2">
-                        <BookOpen className="h-4 w-4 mr-2" />
-                        Review Remediation Clip
-                      </Button>
-                    )}
+                    <div className="flex-1 min-w-0 space-y-4">
+                      <h4 className="font-semibold text-foreground text-lg leading-relaxed">
+                        {qf.question.question_text}
+                      </h4>
+                      
+                      {/* Points Badge */}
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline" className="text-xs">
+                          {qf.points_awarded}/{qf.max_points} points
+                        </Badge>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {qf.question.options?.map((option, optionIndex) => (
+                          <div
+                            key={optionIndex}
+                            className={cn(
+                              "p-4 rounded-lg text-sm transition-all duration-200 hover:shadow-sm",
+                              optionIndex === qf.correct_answer.value
+                                ? 'bg-winbro-success/10 border-2 border-winbro-success/30 shadow-sm'
+                                : optionIndex === qf.user_answer.value && !qf.is_correct
+                                  ? 'bg-destructive/10 border-2 border-destructive/30 shadow-sm'
+                                  : 'bg-muted/30 border border-muted/50'
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="flex-1">{option}</span>
+                              <div className="flex items-center space-x-2 ml-4">
+                                {optionIndex === qf.correct_answer.value && (
+                                  <Badge className="bg-winbro-success text-white text-xs">
+                                    Correct
+                                  </Badge>
+                                )}
+                                {optionIndex === qf.user_answer.value && !qf.is_correct && (
+                                  <Badge className="bg-destructive text-white text-xs">
+                                    Your Answer
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {qf.explanation && (
+                        <div className="p-4 bg-muted/30 rounded-lg border-l-4 border-l-winbro-teal">
+                          <p className="text-sm text-muted-foreground">
+                            <strong className="text-foreground">Explanation:</strong> {qf.explanation}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {qf.remediation_clip_id && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="hover:bg-muted/50 transition-colors duration-200"
+                        >
+                          <BookOpen className="h-4 w-4 mr-2" />
+                          Review Remediation Clip
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Retake Section */}
-      {can_retake && remaining_attempts > 0 && (
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center space-y-4">
-              <h3 className="text-lg font-semibold">Want to improve your score?</h3>
-              <p className="text-muted-foreground">
-                You have {remaining_attempts} attempt{remaining_attempts !== 1 ? 's' : ''} remaining
-              </p>
-              <Button onClick={handleRetake} className="bg-winbro-teal hover:bg-winbro-teal/90">
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Retake Quiz
-              </Button>
+              ))}
             </div>
           </CardContent>
         </Card>
-      )}
+
+        {/* Retake Section */}
+        {can_retake && remaining_attempts > 0 && (
+          <Card className="shadow-elevation-100 border border-border hover:shadow-elevation-200 transition-all duration-300 hover-lift animate-fade-in-up">
+            <CardContent className="p-8">
+              <div className="text-center space-y-6">
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold text-foreground font-heading">
+                    Want to improve your score?
+                  </h3>
+                  <p className="text-muted-foreground text-lg">
+                    You have <span className="font-semibold text-winbro-amber">{remaining_attempts}</span> attempt{remaining_attempts !== 1 ? 's' : ''} remaining
+                  </p>
+                </div>
+                
+                <div className="flex justify-center">
+                  <Badge 
+                    variant="outline" 
+                    className="bg-winbro-amber/10 text-winbro-amber border-winbro-amber/20 px-4 py-2 text-sm font-medium"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    {remaining_attempts} Attempt{remaining_attempts !== 1 ? 's' : ''} Left
+                  </Badge>
+                </div>
+                
+                <Button 
+                  onClick={handleRetake} 
+                  className="bg-winbro-teal hover:bg-winbro-teal/90 hover:scale-105 transition-all duration-200 hover-glow px-8 py-3 text-lg font-semibold"
+                >
+                  <RotateCcw className="h-5 w-5 mr-2" />
+                  Retake Quiz
+                </Button>
+                
+                <div className="text-xs text-muted-foreground space-y-1 max-w-md mx-auto">
+                  <p>• Your previous attempts will be saved</p>
+                  <p>• You can retake as many times as allowed</p>
+                  <p>• Only your best score will be recorded</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

@@ -17,6 +17,7 @@ import UploadContent from "@/pages/dashboard/UploadContent";
 import CourseBuilder from "@/pages/dashboard/CourseBuilder";
 import LearningPlayer from "@/pages/dashboard/LearningPlayer";
 import QuizPage from "@/pages/dashboard/QuizPage";
+import QuizCertificatePage from "@/pages/QuizCertificatePage";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import UserManagement from "@/pages/admin/UserManagement";
 import SettingsPage from "@/pages/dashboard/SettingsPage";
@@ -61,6 +62,7 @@ function App() {
                 <Route path="course-builder" element={<CourseBuilder />} />
                 <Route path="course/:id" element={<LearningPlayer />} />
                 <Route path="quiz/:id" element={<QuizPage />} />
+                <Route path="quiz-results/:id" element={<QuizCertificatePage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>
               
